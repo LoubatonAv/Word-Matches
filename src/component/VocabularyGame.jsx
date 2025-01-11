@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import vocabularyPairs from "../data.js";
-// Vocabulary data
 
 // Utility function to shuffle an array
 function shuffleArray(array) {
@@ -17,6 +16,7 @@ const VocabularyGame = () => {
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [matches, setMatches] = useState(new Set());
 
   useEffect(() => {
@@ -61,33 +61,41 @@ const VocabularyGame = () => {
     setDraggedItem(item);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
   const handleDrop = (targetItem) => {
-    if (!draggedItem || draggedItem.text === targetItem.text) return;
+    const itemToMatch = draggedItem || selectedItem;
 
-    // Check if the dropped items form a correct pair
+    if (!itemToMatch || itemToMatch.text === targetItem.text) return;
+
+    // Check if the dropped or clicked items form a correct pair
     const isMatch = vocabularyPairs.some(
       (pair) =>
-        (draggedItem.type === "word" &&
+        (itemToMatch.type === "word" &&
           targetItem.type === "translation" &&
-          draggedItem.text === pair.word &&
+          itemToMatch.text === pair.word &&
           targetItem.text === pair.translation) ||
-        (draggedItem.type === "translation" &&
+        (itemToMatch.type === "translation" &&
           targetItem.type === "word" &&
-          draggedItem.text === pair.translation &&
+          itemToMatch.text === pair.translation &&
           targetItem.text === pair.word)
     );
 
     if (isMatch) {
       setMatches(
-        (prev) => new Set([...prev, draggedItem.text, targetItem.text])
+        (prev) => new Set([...prev, itemToMatch.text, targetItem.text])
       );
     }
 
     setDraggedItem(null);
+    setSelectedItem(null);
+  };
+
+  const handleItemClick = (item) => {
+    if (!selectedItem) {
+      setSelectedItem(item); // First item is selected
+    } else {
+      // Attempt to match
+      handleDrop(item); // Reuse drop logic for clicks
+    }
   };
 
   const isMatched = (text) => matches.has(text);
@@ -116,11 +124,14 @@ const VocabularyGame = () => {
               key={`word-${index}`}
               draggable
               onDragStart={() => handleDragStart(item)}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(item)}
+              onClick={() => handleItemClick(item)}
               className={`p-4 bg-white border-2 ${
                 isMatched(item.text) ? "border-green-500" : "border-gray-200"
-              } rounded-lg shadow-sm cursor-grab relative text-center min-w-[200px]`}
+              } ${
+                selectedItem?.text === item.text ? "bg-blue-200" : ""
+              } rounded-lg shadow-sm cursor-pointer text-center min-w-[200px]`}
             >
               <span className="text-lg">{item.text}</span>
               {isMatched(item.text) && (
@@ -142,11 +153,14 @@ const VocabularyGame = () => {
               key={`translation-${index}`}
               draggable
               onDragStart={() => handleDragStart(item)}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(item)}
+              onClick={() => handleItemClick(item)}
               className={`p-4 bg-white border-2 ${
                 isMatched(item.text) ? "border-green-500" : "border-gray-200"
-              } rounded-lg shadow-sm cursor-grab relative text-center min-w-[200px]`}
+              } ${
+                selectedItem?.text === item.text ? "bg-blue-200" : ""
+              } rounded-lg shadow-sm cursor-pointer text-center min-w-[200px]`}
             >
               <span className="text-lg">{item.text}</span>
               {isMatched(item.text) && (
